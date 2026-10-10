@@ -8,14 +8,25 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  /* 安全区变量：避开 iPhone 15 Pro 灵动岛 / 状态栏 / 底部小白条（横竖屏都生效） */
+  :root{
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+  }
+
   body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#eef4fb; min-height:100vh; overflow:hidden; }
   .hide { display:none !important; }
 
   /* ---------- 列表页 ---------- */
-  header { position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#4a90e2,#5aa8f0); color:#fff; padding:14px 16px; box-shadow:0 2px 8px rgba(74,144,226,.3); }
+  header { position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#4a90e2,#5aa8f0); color:#fff;
+    padding:calc(var(--sat) + 14px) calc(var(--sar) + 16px) 14px calc(var(--sal) + 16px);
+    box-shadow:0 2px 8px rgba(74,144,226,.3); }
   header h1 { font-size:17px; font-weight:600; }
   header p { font-size:12px; opacity:.85; margin-top:2px; }
-  main { max-width:640px; margin:0 auto; padding:12px 12px 40px; }
+  main { max-width:640px; margin:0 auto; padding:12px 12px calc(var(--sab) + 28px); }
   .chapter { background:#fff; border-radius:14px; margin-bottom:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.05); }
   .chapter-title { display:flex; align-items:center; gap:8px; padding:14px 16px; font-size:15px; font-weight:600; color:#333; cursor:pointer; user-select:none; }
   .chapter-title .dot { width:10px; height:10px; border-radius:50%; background:#f5a623; flex:none; }
@@ -32,36 +43,18 @@
 
   /* ---------- 播放页 ---------- */
   #player { position:fixed; inset:0; background:#000; z-index:100; display:flex; flex-direction:column; }
-  #player .bar { display:flex; align-items:center; gap:10px; padding:12px 14px; background:linear-gradient(135deg,#4a90e2,#5aa8f0); color:#fff; flex:none; }
+  #player .bar { display:flex; align-items:center; gap:10px;
+    padding:calc(var(--sat) + 12px) calc(var(--sar) + 14px) 12px calc(var(--sal) + 14px);
+    background:linear-gradient(135deg,#4a90e2,#5aa8f0); color:#fff; flex:none; }
   #player .back { width:32px; height:32px; border:none; border-radius:50%; background:rgba(255,255,255,.2); color:#fff; font-size:18px; cursor:pointer; flex:none; }
   #player .title { font-size:16px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  #player .vwrap { flex:1; background:#000; display:flex; align-items:center; justify-content:center; position:relative; }
+  #player .vwrap { flex:1; background:#000; display:flex; align-items:center; justify-content:center; position:relative;
+    padding:0 var(--sal) 0 var(--sar); }
   #video { width:100%; max-height:100%; background:#000; }
-  #player .nav { flex:none; display:flex; background:#fff; }
-  #player .nav button { flex:1; padding:15px 10px; border:none; background:#fff; font-size:15px; color:#4a90e2; cursor:pointer; white-space:nowrap; }
+  #player .nav { flex:none; display:flex; background:#fff; padding-left:var(--sal); padding-right:var(--sar); }
+  #player .nav button { flex:1; padding:15px 10px calc(var(--sab) + 8px); border:none; background:#fff; font-size:15px; color:#4a90e2; cursor:pointer; white-space:nowrap; }
   #player .nav button:disabled { color:#ccc; }
   #player .nav button + button { border-left:1px solid #eee; }
-
-  /* 横屏全屏时的浮动切换按钮（始终可见） */
-  #player .rot-fab {
-    position:absolute; top:calc(env(safe-area-inset-top) + 10px); right:10px;
-    width:40px; height:40px; border:none; border-radius:50%;
-    background:rgba(0,0,0,.45); color:#fff; font-size:20px; cursor:pointer; z-index:200;
-  }
-
-  /* ---------- 强制横屏（设备处于竖屏时，用 CSS 旋转整页）---------- */
-  body.force-landscape #player {
-    position:fixed; top:50%; left:50%;
-    width:100vh; height:100vw;
-    transform:translate(-50%,-50%) rotate(90deg);
-  }
-  /* 横屏时隐藏标题栏与导航条，视频铺满全屏 */
-  body.force-landscape #player .bar,
-  body.force-landscape #player .nav { display:none; }
-  body.force-landscape #player .vwrap { flex:1; }
-  body.force-landscape #video { width:100%; height:100%; }
-  /* 浮动按钮反向旋转，保持图标端正 */
-  body.force-landscape #player .rot-fab { transform:rotate(-90deg); }
 </style>
 </head>
 <body>
@@ -69,7 +62,7 @@
 <div id="list">
   <header>
     <h1>自然拼读记单词一本通</h1>
-    <p>点击任意字母 / 组合，自动播放对应视频讲解</p>
+    <p>点击任意字母 / 组合，自动调用系统原生全屏播放</p>
   </header>
   <main id="chapters"></main>
 </div>
@@ -86,7 +79,6 @@
     <button id="prevBtn" onclick="step(-1)">← 上一个</button>
     <button id="nextBtn" onclick="step(1)">下一个 →</button>
   </div>
-  <button class="rot-fab" onclick="toggleOrientation()" title="横屏 / 竖屏切换">⟳</button>
 </div>
 
 <script src="data.js"></script>
@@ -117,18 +109,20 @@ function renderList() {
 }
 
 let cur = -1;
-let forceLandscape = false;
+let fsTried = false;
 
-function applyOrientation() {
-  const portrait = window.matchMedia('(orientation: portrait)').matches;
-  document.body.classList.toggle('force-landscape', forceLandscape && portrait);
-}
-window.addEventListener('orientationchange', applyOrientation);
-window.addEventListener('resize', applyOrientation);
-
-function toggleOrientation() {
-  forceLandscape = !forceLandscape;
-  applyOrientation();
+/* 调用 iOS 系统原生全屏播放器（自动横屏，带系统控制条） */
+function tryNativeFullscreen(v) {
+  if (fsTried) return;
+  try {
+    if (typeof v.webkitEnterFullscreen === 'function') {
+      v.webkitEnterFullscreen();   // iOS：进入系统原生全屏（横屏）
+      fsTried = true;
+    } else if (v.requestFullscreen) {
+      v.requestFullscreen();       // 其它平台兜底
+      fsTried = true;
+    }
+  } catch (e) { /* 部分系统要求严格在手势内调用，失败则退回内联播放 */ }
 }
 
 function updateNav() {
@@ -149,31 +143,34 @@ function play(ci, ii) {
   document.getElementById('pTitle').textContent = it.name;
   const v = document.getElementById('video');
   v.poster = '';
+  fsTried = false;
   v.src = it.mp4;
-  // 自动横屏全屏播放
-  forceLandscape = true;
-  applyOrientation();
+  // 必须在「用户点击手势」内先尝试进入系统原生全屏
+  tryNativeFullscreen(v);
+  // 兜底：视频元数据就绪后若尚未进入全屏，再尝试一次
+  v.addEventListener('loadedmetadata', () => tryNativeFullscreen(v), { once: true });
   v.play().catch(() => {});
   updateNav();
   history.replaceState(null, '', '#' + it.id);
 }
+
 function goBack() {
   document.getElementById('player').classList.add('hide');
   document.getElementById('list').classList.remove('hide');
   document.getElementById('video').pause();
-  forceLandscape = false;
-  applyOrientation();
   history.replaceState(null, '', ' ');
 }
+
 function step(d) { const t = flat[cur + d]; if (t) play(t.ci, t.ii); }
 
-// 支持 #id 直达某个视频（刷新/分享链接后仍定位）
+// 键盘左右切换 / Esc 返回（桌面调试用，移动端忽略）
 document.addEventListener('keydown', e => {
   if (document.getElementById('player').classList.contains('hide')) return;
   if (e.key === 'ArrowRight') step(1);
   if (e.key === 'ArrowLeft') step(-1);
   if (e.key === 'Escape') goBack();
 });
+
 renderList();
 const hash = location.hash.slice(1);
 if (hash) {
