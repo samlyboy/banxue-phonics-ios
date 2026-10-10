@@ -1,0 +1,14 @@
+{
+  "name": "banxue-phonics-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "自然拼读记单词一本通 iOS 离线壳 App",
+  "scripts": {
+    "sync": "cap sync ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  }
+}
