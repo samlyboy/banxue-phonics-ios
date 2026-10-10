@@ -8,7 +8,8 @@ const config = {
   },
   ios: {
     contentInset: 'always',
-    deploymentTarget: '14.0'
+    deploymentTarget: '14.0',
+    orientation: 'default'
   }
 };
 
