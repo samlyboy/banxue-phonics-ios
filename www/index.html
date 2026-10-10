@@ -20,6 +20,9 @@
   body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:#eef4fb; min-height:100vh; overflow:hidden; }
   .hide { display:none !important; }
 
+  /* 列表页独立滚动容器：body overflow:hidden 下仍可正常上下滑动 */
+  #list { position:fixed; inset:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+
   /* ---------- 列表页 ---------- */
   header { position:sticky; top:0; z-index:10; background:linear-gradient(135deg,#4a90e2,#5aa8f0); color:#fff;
     padding:calc(var(--sat) + 14px) calc(var(--sar) + 16px) 14px calc(var(--sal) + 16px);
@@ -86,7 +89,18 @@
 const flat = [];
 DATA.forEach((ch, ci) => ch.items.forEach((it, ii) => flat.push({ ...it, ci, ii })));
 
-function letterOf(name) { return (name || '').trim().split(/\s+/)[0] || ''; }
+function letterOf(name) {
+  const m = (name || '').match(/[A-Za-z]+/);
+  return m ? m[0] : '';
+}
+
+/* 原生屏幕方向控制（Capacitor iOS；纯浏览器环境自动跳过） */
+const SO = (function () {
+  try { return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ScreenOrientation) || null; }
+  catch (e) { return null; }
+})();
+function lockLandscape() { if (SO) SO.lock({ orientation: 'landscape' }).catch(function(){}); }
+function unlockOrientation() { if (SO) SO.unlock().catch(function(){}); }
 
 function renderList() {
   const root = document.getElementById('chapters');
@@ -132,7 +146,7 @@ function updateNav() {
   prevBtn.disabled = !prev;
   nextBtn.disabled = !next;
   prevBtn.innerHTML = prev ? `← 上一个（${letterOf(prev.name)}）` : '← 上一个';
-  nextBtn.innerHTML = next ? `下一个（${letterOf(next.name)}）→` : '下一个 →';
+  nextBtn.innerHTML = next ? `→ 下一个（${letterOf(next.name)}）` : '下一个 →';
 }
 
 function play(ci, ii) {
@@ -145,10 +159,12 @@ function play(ci, ii) {
   v.poster = '';
   fsTried = false;
   v.src = it.mp4;
-  // 必须在「用户点击手势」内先尝试进入系统原生全屏
+  // 1) 必须在「用户点击手势」内先尝试进入系统原生全屏
   tryNativeFullscreen(v);
   // 兜底：视频元数据就绪后若尚未进入全屏，再尝试一次
   v.addEventListener('loadedmetadata', () => tryNativeFullscreen(v), { once: true });
+  // 2) 把 App 锁为横屏，系统全屏播放器随之横屏（无视手机竖屏锁）；退出全屏后自动恢复竖屏
+  lockLandscape();
   v.play().catch(() => {});
   updateNav();
   history.replaceState(null, '', '#' + it.id);
@@ -158,10 +174,16 @@ function goBack() {
   document.getElementById('player').classList.add('hide');
   document.getElementById('list').classList.remove('hide');
   document.getElementById('video').pause();
+  unlockOrientation();
   history.replaceState(null, '', ' ');
 }
 
 function step(d) { const t = flat[cur + d]; if (t) play(t.ci, t.ii); }
+
+// 系统全屏开始/结束时同步横竖屏：进入再锁一次横屏，退出恢复竖屏
+const videoEl = document.getElementById('video');
+videoEl.addEventListener('webkitbeginfullscreen', lockLandscape);
+videoEl.addEventListener('webkitendfullscreen', unlockOrientation);
 
 // 键盘左右切换 / Esc 返回（桌面调试用，移动端忽略）
 document.addEventListener('keydown', e => {
