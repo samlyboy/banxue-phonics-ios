@@ -21,6 +21,9 @@ jobs:
           npm ci
           npx cap add ios
           npx cap sync ios
+          # 注入自定义 App 图标（自然拼读 Phonics）
+          rm -rf ios/App/App/Assets.xcassets/AppIcon.appiconset
+          cp -R ios-resources/AppIcon.appiconset ios/App/App/Assets.xcassets/AppIcon.appiconset
 
       - name: Build real-device arm64 archive (no Apple cert)
         run: |
