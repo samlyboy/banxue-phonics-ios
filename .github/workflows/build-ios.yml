@@ -1,0 +1,42 @@
+name: Build iOS IPA (TrollStore)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    # macos-15 = Xcode 16，支持 iOS 14+ 部署目标，自带 iphoneos SDK（arm64 真机）
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps & Capacitor iOS platform
+        run: |
+          npm ci
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build real-device arm64 archive (no Apple cert)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App \
+            -configuration Release -arch arm64 \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO archive
+
+      - name: Install ldid & fake-sign + package IPA
+        run: |
+          brew install ldid
+          bash scripts/package-ipa.sh
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: banxue-phonics-ipa
+          path: banxue-phonics.ipa
